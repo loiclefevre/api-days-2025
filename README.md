@@ -160,10 +160,19 @@ grant administer redaction policy to developer;
 grant select on redaction_columns to developer;
 ```
 
-### Install the Yaml-JSON JavaScript library
+### Demo #01 - Install the Yaml-JSON JavaScript library
 
 This [demo](./01-demo_yaml_json.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert Yaml file into JSON.
 
-### Install the Toon JavaScript library
+### Demo #02 - Install the Toon JavaScript library
 
 This [demo](./02-demo_json_toon.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert JSON into TOON format for LLM training.
+
+### Demo #03 - JSON Schema management create or store
+
+This [demo](./03-demo_json_schema_management_create_or_store.sqlnb) shows:
+- how to generate a JSON Schema from a relational table (the columns, their types, the constraints, etc. are used to generate the corresponding JSON Schema)
+- how to derive a JSON Schema from a table with a JSON column containing JSON documents
+- how to create a Data Use Case Domain with a JSON Schema attached to it as a CHECK constraint to validate JSON documents
+- how to create a table with a JSON column and insert a JSON Schema into it
+
