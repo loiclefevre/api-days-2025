@@ -1,0 +1,822 @@
+cells:
+  - kind: 1
+    value: "### Managing JSON Schemas in SQL\r
+
+      \r
+
+      Shows how to work with JSON Schemas within the Oracle AI Database 26ai."
+    languageId: markdown
+  - kind: 1
+    value: "#### Creation\r
+
+      \r
+
+      ##### Install Employees / Departments famous dataset"
+    languageId: markdown
+  - kind: 2
+    value: "drop table if exists emp_t purge;\r
+
+      drop table if exists dept_t purge;\r
+
+      \r
+
+      create table dept_t( \r
+
+      \  deptno     number(2,0),   \r
+
+      \  dname      varchar(14),   \r
+
+      \  loc        varchar(13),   \r
+
+      \  constraint pk_dept primary key (deptno)   \r
+
+      );\r
+
+      \r
+
+      alter table dept_t add constraint unique_dname unique (dname);\r
+
+      \r
+
+      create table emp_t(  \r
+
+      \  empno    number,\r
+
+      \  ename    varchar(10),\r
+
+      \  job      varchar(9),\r
+
+      \  mgr      number,\r
+
+      \  hiredate date,\r
+
+      \  sal      number(7,2),\r
+
+      \  comm     number(7,2),\r
+
+      \  deptno   number,\r
+
+      \  constraint pk_emp primary key (empno),\r
+
+      \  constraint fk_deptno foreign key (deptno) references dept_t (deptno)\r
+
+      );\r
+
+      \r
+
+      alter table emp_t add constraint fk_mgr foreign key (mgr) references emp_t
+      (empno);\r
+
+      \r
+
+      alter table emp_t add constraint unique_ename unique (ename);\r
+
+      \r
+
+      -- Insert data with new non positional syntax\r
+
+      insert into DEPT_T\r
+
+      set \r
+
+      (deptno=10, dname='ACCOUNTING', loc='NEW YORK'),\r
+
+      (deptno=20, dname='RESEARCH', loc='DALLAS'),\r
+
+      (deptno=30, dname='SALES', loc='CHICAGO'),\r
+
+      (deptno=40, dname='OPERATIONS', loc='BOSTON');\r
+
+      commit;\r
+
+      \r
+
+      insert into emp_t (empno, ename, job, mgr, hiredate, sal, comm, deptno)\r
+
+      values\r
+
+      (7839, 'KING', 'PRESIDENT', null, to_date('17-11-1981','dd-mm-yyyy'),
+      5000, null, 10),\r
+
+      (7698, 'BLAKE', 'MANAGER', 7839, to_date('1-5-1981','dd-mm-yyyy'), 2850,
+      null, 30),\r
+
+      (7782, 'CLARK', 'MANAGER', 7839, to_date('9-6-1981','dd-mm-yyyy'), 2450,
+      null, 10),\r
+
+      (7566, 'JONES', 'MANAGER', 7839, to_date('2-4-1981','dd-mm-yyyy'), 2975,
+      null, 20),\r
+
+      (7788, 'SCOTT', 'ANALYST', 7566, to_date('13-JUL-87','dd-mm-rr') - 85,
+      3000, null, 20),\r
+
+      (7902, 'FORD', 'ANALYST', 7566, to_date('3-12-1981','dd-mm-yyyy'), 3000,
+      null, 20),\r
+
+      (7369, 'SMITH', 'CLERK', 7902, to_date('17-12-1980','dd-mm-yyyy'), 800,
+      null, 20),\r
+
+      (7499, 'ALLEN', 'SALESMAN', 7698, to_date('20-2-1981','dd-mm-yyyy'), 1600,
+      300, 30),\r
+
+      (7521, 'WARD', 'SALESMAN', 7698, to_date('22-2-1981','dd-mm-yyyy'), 1250,
+      500, 30);\r
+
+      commit;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- 1. Generate the JSON Schema of the EMP_T table\r
+
+      select json_serialize( dbms_json_schema.describe( 'EMP_T' ) returning clob
+      pretty );"
+    languageId: oracle-sql
+  - kind: 1
+    value: "This returns the following JSON Schema containing some [database
+      vocabulary](https://github.com/json-schema-org/vocab-database/blob/main/d\
+      atabase.md) keywords:\r
+
+      \r
+
+      ```json\r
+
+      {\r
+
+      \  \"title\" : \"EMP_T\",\r
+
+      \  \"dbObject\" : \"DEVELOPER.EMP_T\",\r
+
+      \  \"type\" : \"object\",\r
+
+      \  \"dbObjectType\" : \"table\",\r
+
+      \  \"properties\" :\r
+
+      \  {\r
+
+      \    \"EMPNO\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"number\",\r
+
+      \      \"extendedType\" : \"number\"\r
+
+      \    },\r
+
+      \    \"ENAME\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"string\",\r
+
+      \          \"maxLength\" : 10\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"JOB\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"string\",\r
+
+      \          \"maxLength\" : 9\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"MGR\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\"\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"HIREDATE\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"date\"\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"SAL\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\",\r
+
+      \          \"sqlPrecision\" : 7,\r
+
+      \          \"sqlScale\" : 2\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"COMM\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\",\r
+
+      \          \"sqlPrecision\" : 7,\r
+
+      \          \"sqlScale\" : 2\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"DEPTNO\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\"\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    }\r
+
+      \  },\r
+
+      \  \"required\" :\r
+
+      \  [\r
+
+      \    \"EMPNO\"\r
+
+      \  ],\r
+
+      \  \"dbUnique\" :\r
+
+      \  [\r
+
+      \    [\r
+
+      \      \"ENAME\"\r
+
+      \    ]\r
+
+      \  ],\r
+
+      \  \"dbPrimaryKey\" :\r
+
+      \  [\r
+
+      \    \"EMPNO\"\r
+
+      \  ],\r
+
+      \  \"dbForeignKey\" :\r
+
+      \  [\r
+
+      \    {\r
+
+      \      \"DEPTNO\" :\r
+
+      \      {\r
+
+      \        \"dbObject\" : \"DEVELOPER.DEPT_T\",\r
+
+      \        \"dbColumn\" : \"DEPTNO\"\r
+
+      \      }\r
+
+      \    },\r
+
+      \    {\r
+
+      \      \"MGR\" :\r
+
+      \      {\r
+
+      \        \"dbObject\" : \"DEVELOPER.EMP_T\",\r
+
+      \        \"dbColumn\" : \"EMPNO\"\r
+
+      \      }\r
+
+      \    }\r
+
+      \  ]\r
+
+      }\r
+
+      ```"
+    languageId: markdown
+  - kind: 1
+    value: "Now let's create a `blog_posts` table and insert some JSON documents.
+      We'll then derive the JSON Schema from the JSON documents:"
+    languageId: markdown
+  - kind: 2
+    value: "create table blog_posts (\r
+
+      \  data json -- BINARY JSON\r
+
+      );\r
+
+      \r
+
+      insert into blog_posts(data) values(\r
+
+      \    json {\r
+
+      \        'title': 'New Blog Post',\r
+
+      \        'content': 'This is the content of the blog post...',\r
+
+      \        'publishedDate': '2023-08-25T15:00:00Z',\r
+
+      \        'author': {\r
+
+      \            'username': 'authoruser',\r
+
+      \            'email': 'author@example.com'\r
+
+      \        },\r
+
+      \        'tags': ['Technology', 'Programming']\r
+
+      \    }\r
+
+      );\r
+
+      commit;\r
+
+      \r
+
+      -- Nothing prevents inserting bad data!\r
+
+      insert into blog_posts values('{\"garbageDocument\":true}');\r
+
+      commit;\r
+
+      \r
+
+      -- SQL dot notation to navigate in JSON hierarchy\r
+
+      select p.data.title, \r
+
+      \       p.data.author.username.string() as username,\r
+
+      \       p.data.tags[1].string() as \"array_field[1]\"\r
+
+      \  from blog_posts p;\r
+
+      \r
+
+      select data from blog_posts;\r
+
+      \r
+
+      -- 2. JSON Schema to the rescue, but how to create it? \r
+
+      -- Ask the database!\r
+
+      select json_dataguide(\r
+
+      \    data, \r
+
+      \    dbms_json.format_schema,\r
+
+      \    dbms_json.pretty\r
+
+      ) as json_schema\r
+
+      from blog_posts;"
+    languageId: oracle-sql
+  - kind: 1
+    value: "The derived JSON Schema is:\r
+
+      ```json\r
+
+      {\r
+
+      \  \"type\" : \"object\",\r
+
+      \  \"o:length\" : 1,\r
+
+      \  \"properties\" :\r
+
+      \  {\r
+
+      \    \"tags\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"array\",\r
+
+      \      \"o:length\" : 1,\r
+
+      \      \"o:preferred_column_name\" : \"tags\",\r
+
+      \      \"items\" :\r
+
+      \      {\r
+
+      \        \"type\" : \"string\",\r
+
+      \        \"o:length\" : 16,\r
+
+      \        \"o:preferred_column_name\" : \"scalar_string\"\r
+
+      \      }\r
+
+      \    },\r
+
+      \    \"title\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"string\",\r
+
+      \      \"o:length\" : 16,\r
+
+      \      \"o:preferred_column_name\" : \"title\"\r
+
+      \    },\r
+
+      \    \"author\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"object\",\r
+
+      \      \"o:length\" : 1,\r
+
+      \      \"o:preferred_column_name\" : \"author\",\r
+
+      \      \"properties\" :\r
+
+      \      {\r
+
+      \        \"email\" :\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"o:length\" : 32,\r
+
+      \          \"o:preferred_column_name\" : \"email\"\r
+
+      \        },\r
+
+      \        \"username\" :\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"o:length\" : 16,\r
+
+      \          \"o:preferred_column_name\" : \"username\"\r
+
+      \        }\r
+
+      \      }\r
+
+      \    },\r
+
+      \    \"content\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"string\",\r
+
+      \      \"o:length\" : 64,\r
+
+      \      \"o:preferred_column_name\" : \"content\"\r
+
+      \    },\r
+
+      \    \"publishedDate\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"string\",\r
+
+      \      \"o:length\" : 32,\r
+
+      \      \"o:preferred_column_name\" : \"publishedDate\"\r
+
+      \    },\r
+
+      \    \"garbageDocument\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"boolean\",\r
+
+      \      \"o:length\" : 4,\r
+
+      \      \"o:preferred_column_name\" : \"garbageDocument\"\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      ```"
+    languageId: markdown
+  - kind: 1
+    value: "Next we'll store the JSON Schema as a check constraint within a [*Data
+      Use Case
+      Domain*](https://docs.oracle.com/en/database/oracle/oracle-database/26/ad\
+      fns/registering-application-data-usage-database.html#GUID-4743FDE1-7C6E-4\
+      71B-BC9D-442383CCA2F9):"
+    languageId: markdown
+  - kind: 2
+    value: "-- 3. create the Data Use Case Domain with CAST/Type coercion enabled\r
+
+      create domain BlogPost as json\r
+
+      validate CAST using '{\r
+
+      \        \"$id\": \"https://example.com/blog-post.schema.json\",\r
+
+      \        \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \        \"description\": \"A representation of a blog post\",\r
+
+      \        \"type\": \"object\",\r
+
+      \        \"required\": [\"title\", \"content\", \"author\"],\r
+
+      \        \"properties\": {\r
+
+      \            \"title\": {\r
+
+      \                \"type\": \"string\"\r
+
+      \            },\r
+
+      \            \"content\": {\r
+
+      \                \"type\": \"string\"\r
+
+      \            },\r
+
+      \            \"publishedDate\": {\r
+
+      \                \"extendedType\": \"timestamp\",\r
+
+      \                \"format\": \"date-time\"\r
+
+      \            },\r
+
+      \            \"author\": {\r
+
+      \                \"$ref\":
+      \"https://example.com/user-profile.schema.json\"\r
+
+      \            },\r
+
+      \            \"tags\": {\r
+
+      \                \"type\": \"array\",\r
+
+      \                \"items\": {\r
+
+      \                    \"type\": \"string\"\r
+
+      \                }\r
+
+      \            }\r
+
+      \        },\r
+
+      \        \"$def\": {\r
+
+      \            \"$id\": \"https://example.com/user-profile.schema.json\",\r
+
+      \            \"$schema\":
+      \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \            \"description\": \"A representation of a user profile\",\r
+
+      \            \"type\": \"object\",\r
+
+      \            \"required\": [\"username\", \"email\"],\r
+
+      \            \"properties\": {\r
+
+      \                \"username\": {\r
+
+      \                    \"type\": \"string\"\r
+
+      \                },\r
+
+      \                \"email\": {\r
+
+      \                    \"type\": \"string\",\r
+
+      \                    \"format\": \"email\"\r
+
+      \                },\r
+
+      \                \"fullName\": {\r
+
+      \                    \"type\": \"string\"\r
+
+      \                },\r
+
+      \                \"age\": {\r
+
+      \                    \"type\": \"integer\",\r
+
+      \                    \"minimum\": 0\r
+
+      \                },\r
+
+      \                \"location\": {\r
+
+      \                    \"type\": \"string\"\r
+
+      \                },\r
+
+      \                \"interests\": {\r
+
+      \                    \"type\": \"array\",\r
+
+      \                        \"items\": {\r
+
+      \                            \"type\": \"string\"\r
+
+      \                        }\r
+
+      \                }\r
+
+      \            }\r
+
+      \        }\r
+
+      \    }';"
+    languageId: oracle-sql
+  - kind: 1
+    value: "Finally, one can store a JSON Schema right inside a JSON column:"
+    languageId: markdown
+  - kind: 2
+    value: "create table json_schemas( content JSON );\r
+
+      \r
+
+      -- 4. store JSON Schemas within the table\r
+
+      insert into json_schemas(content)\r
+
+      values ('{ \"type\": \"object\", \"properties\": { \"orderId\":
+      {\"type\":\r
+
+      \      \"string\"}, \"customer\": {\"type\": \"string\"}, \"lineItems\":
+      {\r
+
+      \      \"type\": \"array\", \"items\": { \"type\": \"object\",
+      \"properties\": {\r
+
+      \      \"product\": {\"type\": \"string\"}, \"quantity\": {\"type\":
+      \"number\"},\r
+
+      \      \"discounts\": { \"type\": \"array\", \"items\": {\"type\":
+      \"number\"} }\r
+
+      \      } } } } }');\r
+
+      commit;"
+    languageId: oracle-sql

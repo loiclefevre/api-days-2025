@@ -1,8 +1,8 @@
 cells:
   - kind: 1
-    value: "##### Install Yaml-JSON JavaScript library\r
+    value: "### Install Yaml-JSON JavaScript library\r
 
-      ###### Create installer as a JavaScript stored procedure"
+      #### Create installer as a JavaScript stored procedure"
     languageId: markdown
   - kind: 2
     value: "-- Creates a DIRECTORY to access files stored outside the database\r
@@ -104,7 +104,7 @@ cells:
       \  from user_mle_modules;"
     languageId: oracle-sql
   - kind: 1
-    value: "###### Install Yaml-JSON converter library"
+    value: "#### Install Yaml-JSON converter library"
     languageId: markdown
   - kind: 2
     value: "create or replace mle env install_js_yaml_env\r

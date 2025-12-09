@@ -1,8 +1,8 @@
 cells:
   - kind: 1
-    value: "##### Install Toon JavaScript library\r
+    value: "### Install Toon JavaScript library\r
 
-      ##### Create installer as a JavaScript stored procedure"
+      #### Create installer as a JavaScript stored procedure"
     languageId: markdown
   - kind: 2
     value: "-- Creates a DIRECTORY to access files stored outside the database\r
@@ -142,8 +142,8 @@ cells:
       \    /"
     languageId: oracle-sql
   - kind: 1
-    value: "##### Now run a test to convert the following JSON document into its
-      TOON format"
+    value: "#### Now run a test to convert the following JSON document into its TOON
+      format"
     languageId: markdown
   - kind: 2
     value: "select to_toon(\r
