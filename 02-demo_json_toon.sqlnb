@@ -1,6 +1,18 @@
 cells:
+  - kind: 1
+    value: "##### Install Toon JavaScript library\r
+
+      ##### Create installer as a JavaScript stored procedure"
+    languageId: markdown
   - kind: 2
-    value: "create or replace directory libs_dir as '/opt/oracle/oradata/libs';\r
+    value: "-- Creates a DIRECTORY to access files stored outside the database\r
+
+      create or replace directory libs_dir as '/opt/oracle/oradata/libs';\r
+
+      \r
+
+      -- Creates the libs external table used to load .js files inside the
+      content column\r
 
       create table if not exists libs(content clob) \r
 
@@ -35,6 +47,8 @@ cells:
       REJECT LIMIT UNLIMITED;\r
 
       \r
+
+      -- Creates an installer module\r
 
       set define off\r
 
@@ -75,9 +89,7 @@ cells:
 
       \r
 
-      exec install_toon_module;\r
-
-      \r\n"
+      exec install_toon_module;\r\n"
     languageId: oracle-sql
   - kind: 2
     value: "CREATE OR REPLACE MLE MODULE tooninvoker\r
@@ -97,8 +109,6 @@ cells:
       \    }\r
 
       \    /\r
-
-      \r
 
       \r
 
@@ -131,6 +141,10 @@ cells:
 
       \    /"
     languageId: oracle-sql
+  - kind: 1
+    value: "##### Now run a test to convert the following JSON document into its
+      TOON format"
+    languageId: markdown
   - kind: 2
     value: "select to_toon(\r
 
@@ -145,7 +159,4 @@ cells:
       \       ]\r
 
       \     }!') as toon;"
-    languageId: oracle-sql
-  - kind: 2
-    value: select 1;
     languageId: oracle-sql

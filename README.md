@@ -56,6 +56,8 @@ exit;
 ```
 
 #### Copy ONNX model into the container
+First unzip the 3-files zip archive (first volume is ALL-MINILM-L12-V2.zip.001) into its original name, then copy the file into the container:
+
 ```bash
 podman cp ALL-MINILM-L12-V2.onnx oracle:/opt/oracle/
 ```
@@ -164,3 +166,4 @@ This [demo](./01-demo_yaml_json.sqlnb) shows how to load a JavaScript library an
 
 ### Install the Toon JavaScript library
 
+This [demo](./02-demo_json_toon.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert JSON into TOON format for LLM training.

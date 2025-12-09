@@ -87,7 +87,7 @@ cells:
 
       }\r
 
-      /\r\n"
+      /"
     languageId: oracle-sql
   - kind: 2
     value: "-- See existing modules (at demo startup, only one should appear: the
