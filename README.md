@@ -162,7 +162,7 @@ grant select on redaction_columns to developer;
 
 ### Demo #01 - Install the Yaml-JSON JavaScript library
 
-This [demo](./01-demo_yaml_json.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert Yaml file into JSON.
+This [demo](vscode://./01-demo_yaml_json.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert Yaml file into JSON.
 
 ### Demo #02 - Install the Toon JavaScript library
 
