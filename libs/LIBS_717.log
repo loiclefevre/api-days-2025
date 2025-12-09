@@ -1,0 +1,52 @@
+
+
+ LOG file opened at 12/09/25 15:15:14
+
+Total Number of Files=1
+
+Data File: js-yaml.js
+
+Log File: LIBS_717.log
+
+
+
+ LOG file opened at 12/09/25 15:15:14
+
+Bad File: LIBS_717.bad
+
+Field Definitions for table LIBS
+  Record format DELIMITED, delimited by 00
+  Data in file has same endianness as the platform
+  Rows with all null fields are accepted
+
+  Fields in Data Source: 
+
+    CONTENT                         CHAR (1000000000)
+      Terminated by "00"
+      Trim whitespace same as SQL Loader
+
+
+ LOG file opened at 12/09/25 15:15:23
+
+Total Number of Files=1
+
+Data File: js-yaml.js
+
+Log File: LIBS_717.log
+
+
+
+ LOG file opened at 12/09/25 15:15:23
+
+Bad File: LIBS_717.bad
+
+Field Definitions for table LIBS
+  Record format DELIMITED, delimited by 00
+  Data in file has same endianness as the platform
+  Rows with all null fields are accepted
+
+  Fields in Data Source: 
+
+    CONTENT                         CHAR (1000000000)
+      Terminated by "00"
+      Trim whitespace same as SQL Loader

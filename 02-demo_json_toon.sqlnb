@@ -1,0 +1,151 @@
+cells:
+  - kind: 2
+    value: "create or replace directory libs_dir as '/opt/oracle/oradata/libs';\r
+
+      create table if not exists libs(content clob) \r
+
+      ORGANIZATION EXTERNAL (\r
+
+      \    TYPE oracle_loader\r
+
+      \    DEFAULT DIRECTORY libs_dir\r
+
+      \    ACCESS PARAMETERS\r
+
+      \    (\r
+
+      \      RECORDS DELIMITED BY 0x'00'\r
+
+      \      IO_OPTIONS (NODIRECTIO)\r
+
+      \      FIELDS TERMINATED BY 0x'00'\r
+
+      \      (\r
+
+      \        content CHAR(1000000000)\r
+
+      \      )\r
+
+      \    )\r
+
+      \    LOCATION ('js-yaml.js')\r
+
+      )\r
+
+      REJECT LIMIT UNLIMITED;\r
+
+      \r
+
+      set define off\r
+
+      create or replace PROCEDURE install_toon_module as mle language
+      javascript\r
+
+      \ {{{\r
+
+      \    var result = session.execute(\r
+
+      \    `SELECT content FROM libs external modify ( location ( 'toon.js' )
+      )`, {}, \r
+
+      \    {\r
+
+      \        fetchInfo:{\r
+
+      \            \"CONTENT\": {type: oracledb.STRING}\r
+
+      \        },\r
+
+      \        outFormat: oracledb.OBJECT\r
+
+      \    } );\r
+
+      \r
+
+      \    const contentToon = result.rows[0].CONTENT;\r
+
+      \r
+
+      \    result = session.execute(`create or replace mle module toon language
+      javascript as ${contentToon}`, {} );\r
+
+      }}};\r
+
+      /\r
+
+      \r
+
+      exec install_toon_module;\r
+
+      \r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "CREATE OR REPLACE MLE MODULE tooninvoker\r
+
+      \    LANGUAGE JAVASCRIPT\r
+
+      \    AS\r
+
+      \    export async function to_toon(input) {\r
+
+      \      const { encode, decode } = await import('toon');\r
+
+      \      let encoded = JSON.parse(input);\r
+
+      \      return encode(encoded);\r
+
+      \    }\r
+
+      \    /\r
+
+      \r
+
+      \r
+
+      CREATE OR REPLACE MLE ENV toonenv\r
+
+      \    IMPORTS (\r
+
+      \     'toon' MODULE toon,\r
+
+      \     'tooninvoker' MODULE tooninvoker\r
+
+      \    )\r
+
+      \    language options 'js.strict=true, js.console=true,
+      js.polyglot-builtin=true'\r
+
+      \    /\r
+
+      \r
+
+      \    CREATE OR REPLACE FUNCTION to_toon(\"input\" varchar2)\r
+
+      \    RETURN varchar2\r
+
+      \    AS MLE MODULE tooninvoker\r
+
+      \    ENV toonenv\r
+
+      \    SIGNATURE 'to_toon';\r
+
+      \    /"
+    languageId: oracle-sql
+  - kind: 2
+    value: "select to_toon(\r
+
+      \  q'!{\r
+
+      \       \"users\": [\r
+
+      \         { \"id\": 1, \"name\": \"Alice\", \"role\": \"admin\" },\r
+
+      \         { \"id\": 2, \"name\": \"Bob\", \"role\": \"user\" }\r
+
+      \       ]\r
+
+      \     }!') as toon;"
+    languageId: oracle-sql
+  - kind: 2
+    value: select 1;
+    languageId: oracle-sql

@@ -1,0 +1,511 @@
+cells:
+  - kind: 1
+    value: "##### Install Yaml-JSON JavaScript library\r
+
+      ###### Create installer as a JavaScript stored procedure"
+    languageId: markdown
+  - kind: 2
+    value: "-- Creates a DIRECTORY to access files stored outside the database\r
+
+      create or replace directory libs_dir as '/opt/oracle/oradata/libs';\r
+
+      \r
+
+      -- Creates the libs external table used to load .js files inside the
+      content column\r
+
+      create table if not exists libs(content clob) \r
+
+      ORGANIZATION EXTERNAL (\r
+
+      \    TYPE oracle_loader\r
+
+      \    DEFAULT DIRECTORY libs_dir\r
+
+      \    ACCESS PARAMETERS\r
+
+      \    (\r
+
+      \      RECORDS DELIMITED BY 0x'00'\r
+
+      \      IO_OPTIONS (NODIRECTIO)\r
+
+      \      FIELDS TERMINATED BY 0x'00'\r
+
+      \      (\r
+
+      \        content CHAR(1000000000)\r
+
+      \      )\r
+
+      \    )\r
+
+      \    LOCATION ('js-yaml.js')\r
+
+      )\r
+
+      REJECT LIMIT UNLIMITED;\r
+
+      \r
+
+      -- Creates an installer module\r
+
+      set define off\r
+
+      create or replace mle module install_js_yaml_module language javascript
+      as\r
+
+      export async function run() {\r
+
+      \    var result = session.execute(\r
+
+      \    `SELECT content FROM libs external modify ( location ( 'js-yaml.js' )
+      )`, {}, \r
+
+      \    {\r
+
+      \        fetchInfo:{\r
+
+      \            \"CONTENT\": {type: oracledb.STRING}\r
+
+      \        },\r
+
+      \        outFormat: oracledb.OBJECT\r
+
+      \    } );\r
+
+      \r
+
+      \    const contentJSYaml = result.rows[0].CONTENT;\r
+
+      \r
+
+      \    result = session.execute(`create or replace mle module js_yaml_mod
+      language javascript as\r
+
+      \    ${contentJSYaml}`, {} );\r
+
+      }\r
+
+      /\r\n"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- See existing modules (at demo startup, only one should appear: the
+      installer)\r
+
+      select module_name, \r
+
+      \       version, \r
+
+      \       language_name, \r
+
+      \       length(module)\r
+
+      \  from user_mle_modules;"
+    languageId: oracle-sql
+  - kind: 1
+    value: "###### Install Yaml-JSON converter library"
+    languageId: markdown
+  - kind: 2
+    value: "create or replace mle env install_js_yaml_env\r
+
+      \  language options 'js.strict=true, js.console=true,
+      js.polyglot-builtin=true';\r
+
+      \r
+
+      create or replace package install_js_yaml authid current_user is\r
+
+      \   procedure run as \r
+
+      \   mle module install_js_yaml_module env install_js_yaml_env signature
+      'run()';\r
+
+      end;\r
+
+      /\r
+
+      \r
+
+      drop mle module if exists js_yaml_mod;\r
+
+      \r
+
+      -- Run the installer\r
+
+      exec install_js_yaml.run;\r
+
+      \r
+
+      -- Now create stored procedures\r
+
+      create or replace mle env js_yaml_env\r
+
+      \  language options 'js.strict=true, js.console=false,
+      js.polyglot-builtin=true';\r
+
+      \r
+
+      create or replace package js_yaml authid current_user is\r
+
+      \   function to_json(p_yaml in varchar2) return json as \r
+
+      \   mle module js_yaml_mod env js_yaml_env signature 'load(string)';\r
+
+      \   function to_yaml(p_json in json) return varchar2 as \r
+
+      \   mle module js_yaml_mod env js_yaml_env signature 'dump(any)';\r
+
+      end;\r
+
+      /"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Check that there are now 2 modules\r
+
+      select module_name, \r
+
+      \       version, \r
+
+      \       language_name, \r
+
+      \       length(module)\r
+
+      \  from user_mle_modules;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Convert from Yaml to JSON\r
+
+      select js_yaml.to_json(q'[\r
+
+      ---\r
+
+      # root\r
+
+      hello:\r
+
+      \  name: Loïc Lefèvre\r
+
+      \  database:\r
+
+      \    vendor: Oracle\r
+
+      \    version: 26]' ) as JSON;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Convert from JSON to Yaml\r
+
+      select js_yaml.to_yaml(\r
+
+      \  json { 'api' : json { 'name': 'reporting', 'version': '2.0.1',
+      'authors': ['Loïc','Beda'], 'compatibility': json { 'architectures':
+      ['x86_64', 'arm64'], 'languages': ['Java', 'JavaScript'] } } }\r
+
+      \ ) as YAML;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- https://learn.openapis.org/examples/v3.0/api-with-examples.html\r
+
+      with data as (\r
+
+      select q'[\r
+
+      openapi: 3.0.0\r
+
+      info:\r
+
+      \  version: 1.0.0\r
+
+      \  title: Swagger Petstore\r
+
+      \  description: A sample API that uses a petstore as an example to
+      demonstrate features in the OpenAPI 3.0 specification\r
+
+      \  termsOfService: http://swagger.io/terms/\r
+
+      \  contact:\r
+
+      \    name: Swagger API Team\r
+
+      \    email: apiteam@swagger.io\r
+
+      \    url: http://swagger.io\r
+
+      \  license:\r
+
+      \    name: Apache 2.0\r
+
+      \    url: https://www.apache.org/licenses/LICENSE-2.0.html\r
+
+      servers:\r
+
+      \  - url: https://petstore.swagger.io/v2\r
+
+      paths:\r
+
+      \  /pets:\r
+
+      \    get:\r
+
+      \      description: |\r
+
+      \        Returns all pets from the system that the user has access to\r
+
+      \        Nam sed condimentum est. Maecenas tempor sagittis sapien, nec
+      rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem.
+      Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi
+      turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse
+      platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean
+      pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras
+      quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna
+      volutpat venenatis eget eget mauris. In eleifend fermentum facilisis.
+      Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse
+      lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi
+      euismod sagittis libero sed lacinia.\r
+
+      \r
+
+      \        Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit
+      nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget
+      aliquet faucibus. In a mattis elit. Phasellus vel urna viverra,
+      condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed
+      a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique
+      vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada
+      accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit
+      amet auctor felis gravida. Sed libero lorem, molestie sed nisl in,
+      accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel
+      eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu,
+      euismod sapien.\r
+
+      \      operationId: findPets\r
+
+      \      parameters:\r
+
+      \        - name: tags\r
+
+      \          in: query\r
+
+      \          description: tags to filter by\r
+
+      \          required: false\r
+
+      \          style: form\r
+
+      \          schema:\r
+
+      \            type: array\r
+
+      \            items:\r
+
+      \              type: string\r
+
+      \        - name: limit\r
+
+      \          in: query\r
+
+      \          description: maximum number of results to return\r
+
+      \          required: false\r
+
+      \          schema:\r
+
+      \            type: integer\r
+
+      \            format: int32\r
+
+      \      responses:\r
+
+      \        '200':\r
+
+      \          description: pet response\r
+
+      \          content:\r
+
+      \            application/json:\r
+
+      \              schema:\r
+
+      \                type: array\r
+
+      \                items:\r
+
+      \                  $ref: '#/components/schemas/Pet'\r
+
+      \        default:\r
+
+      \          description: unexpected error\r
+
+      \          content:\r
+
+      \            application/json:\r
+
+      \              schema:\r
+
+      \                $ref: '#/components/schemas/Error'\r
+
+      \    post:\r
+
+      \      description: Creates a new pet in the store. Duplicates are
+      allowed\r
+
+      \      operationId: addPet\r
+
+      \      requestBody:\r
+
+      \        description: Pet to add to the store\r
+
+      \        required: true\r
+
+      \        content:\r
+
+      \          application/json:\r
+
+      \            schema:\r
+
+      \              $ref: '#/components/schemas/NewPet'\r
+
+      \      responses:\r
+
+      \        '200':\r
+
+      \          description: pet response\r
+
+      \          content:\r
+
+      \            application/json:\r
+
+      \              schema:\r
+
+      \                $ref: '#/components/schemas/Pet'\r
+
+      \        default:\r
+
+      \          description: unexpected error\r
+
+      \          content:\r
+
+      \            application/json:\r
+
+      \              schema:\r
+
+      \                $ref: '#/components/schemas/Error'\r
+
+      \ \r
+
+      \    delete:\r
+
+      \      description: deletes a single pet based on the ID supplied\r
+
+      \      operationId: deletePet\r
+
+      \      parameters:\r
+
+      \        - name: id\r
+
+      \          in: path\r
+
+      \          description: ID of pet to delete\r
+
+      \          required: true\r
+
+      \          schema:\r
+
+      \            type: integer\r
+
+      \            format: int64\r
+
+      \      responses:\r
+
+      \        '204':\r
+
+      \          description: pet deleted\r
+
+      \        default:\r
+
+      \          description: unexpected error\r
+
+      \          content:\r
+
+      \            application/json:\r
+
+      \              schema:\r
+
+      \                $ref: '#/components/schemas/Error'\r
+
+      components:\r
+
+      \  schemas:\r
+
+      \    Pet:\r
+
+      \      allOf:\r
+
+      \        - $ref: '#/components/schemas/NewPet'\r
+
+      \        - type: object\r
+
+      \          required:\r
+
+      \            - id\r
+
+      \          properties:\r
+
+      \            id:\r
+
+      \              type: integer\r
+
+      \              format: int64\r
+
+      \    NewPet:\r
+
+      \      type: object\r
+
+      \      required:\r
+
+      \        - name\r
+
+      \      properties:\r
+
+      \        name:\r
+
+      \          type: string\r
+
+      \        tag:\r
+
+      \          type: string\r
+
+      \    Error:\r
+
+      \      type: object\r
+
+      \      required:\r
+
+      \        - code\r
+
+      \        - message\r
+
+      \      properties:\r
+
+      \        code:\r
+
+      \          type: integer\r
+
+      \          format: int32\r
+
+      \        message:\r
+
+      \          type: string\r
+
+      ]' as yaml )\r
+
+      select length(yaml) as length_yaml, \r
+
+      \       js_yaml.to_json( yaml ) as JSON, \r
+
+      \       length( js_yaml.to_json( yaml ) ) as length_json,\r
+
+      \       round( 100 * length( js_yaml.to_json( yaml ) ) / length(yaml), 2)
+      as ratio\r
+
+      \  from data;"
+    languageId: oracle-sql
