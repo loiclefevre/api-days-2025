@@ -1,6 +1,11 @@
 # API Days 2025 - JSON Schema conference - Demos
 
-This GitHub repository comes with numerous demos related to the support of JSON Schemas within the Oracle AI Database 26ai. You can access the demos from December 2024 [here](https://github.com/loiclefevre/apidays-paris-2024).
+This GitHub repository comes with numerous demos related to the support of JSON Schemas within the Oracle AI Database 26ai. You can access the demos from APIDays Paris 2024 [here](https://github.com/loiclefevre/apidays-paris-2024).
+
+## Follow-up event: 
+
+[JSON Schema support in Autonomous AI Database](https://asktom.oracle.com/ords/r/tech/catalog/session-landing-page?p2_event_id=90355527572382336109225349848037482576&p2_source_log=QR) will take place online the 10th of February 2026.
+![](./img/event.png)
 
 ## Setup
 
@@ -13,7 +18,7 @@ Install the [VSCode extension from the market place](https://marketplace.visuals
 To install an Oracle AI database 26ai, install podman and then run (after replacing <path> with your own path to a shared folder named libs, shared between your OS and the container):
 
 ```bash
-podman run -d --rm --name oracle -p 1521:1521 -e ORACLE_PASSWORD=free -e APP_USER=developer -e APP_USER_PASSWORD=free --volume C:\<path>\api-days-2025\libs:/opt/oracle/oradata/libs gvenzl/oracle-free:23.26.0
+podman run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD=free -e APP_USER=developer -e APP_USER_PASSWORD=free --volume C:\<path>\api-days-2025\libs:/opt/oracle/oradata/libs gvenzl/oracle-free:23.26.0
 ```
 
 This command will configure a user named `developer` whose password will be `free`.
@@ -41,9 +46,6 @@ exit;
 ```bash
 cd $ORACLE_HOME/rdbms/admin/
 $ORACLE_HOME/perl/bin/perl catcon.pl -d $ORACLE_HOME/rdbms/admin -l /tmp -b utl32k_output utl32k.sql
-```
-
-```bash
 sqlplus / as sysdba
 ```
 
@@ -166,7 +168,7 @@ This [demo](vscode://./01-demo_yaml_json.sqlnb) shows how to load a JavaScript l
 
 ### Demo #02 - Install the Toon JavaScript library
 
-This [demo](./02-demo_json_toon.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert JSON into TOON format for LLM training.
+This [demo](https://github.com/loiclefevre/api-days-2025/blob/main/02-demo_json_toon.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert JSON into TOON format for LLM training.
 
 ### Demo #03 - JSON Schema management create or store
 
