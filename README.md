@@ -197,3 +197,7 @@ This [demo](./06-demo_flexible_domain_for_versioning.sqlnb) shows how *flexible*
 ### Demo #07 - Hiding columns from generated JSON Schema
 
 This [demo](./07-demo_security_hiding_columns.sqlnb) shows how an *invisible* column is not taken into account in the JSON Schema generation process.
+
+### Demo #08 - JSON data transformation that can be used to modify JSON Schemas in SQL
+
+This [demo](./08-demo_json_schema_transformation.sqlnb) shows which SQL functions can be used to apply modifications to a JSON Schema.

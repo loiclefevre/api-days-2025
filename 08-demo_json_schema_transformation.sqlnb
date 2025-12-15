@@ -1,0 +1,87 @@
+cells:
+  - kind: 1
+    value: "### JSON Schemas are JSON documents, and they can be modified...\r
+
+      \r
+
+      - using SQL with `JSON_TRANSFORM()` or `JSON_PATH()` functions.\r
+
+      - using PL/SQL types `JSON_OBJECT_T`, `JSON_ARRAY_T`\r
+
+      - using MLE - JavaScript based stored procedures using native JavaScript
+      operations or existing modules"
+    languageId: markdown
+  - kind: 2
+    value: "-- JSON_TRANSFORM() provides numerous operators to modify a JSON
+      document\r
+
+      -- for both SELECT and UPDATE statements\r
+
+      select json_transform(\r
+
+      \    '{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \       \"properties\": {\r
+
+      \         \"name\":{\"type\":\"string\"}\r
+
+      \       },\r
+
+      \       \"required\": [\"name\"] }',\r
+
+      \    replace '$.\"$schema\"' = 'https://json-schema.org/v1',\r
+
+      \    set '$.properties.age' = json { 'type' : 'integer' },\r
+
+      \    prepend '$.required' = 'age'\r
+
+      ) as modified_schema;\r\n"
+    languageId: oracle-sql
+  - kind: 1
+    value: "Resulting JSON Schema:\r
+
+      \r
+
+      ```json\r
+
+      {\r
+
+      \  \"$schema\":\"https://json-schema.org/v1\",\r
+
+      \  \"properties\": { \r
+
+      \    \"name\": { \"type\": \"string\" },\r
+
+      \    \"age\": { \"type\": \"integer\" }\r
+
+      \  },\r
+
+      \  \"required\":[\"age\",\"name\"]\r
+
+      }\r
+
+      ```"
+    languageId: markdown
+  - kind: 2
+    value: "-- JSON_DIFF() function produces JSON patches that can be used with
+      JSON_PATCH() function\r
+
+      select json_diff(\r
+
+      \    json { 'hello': 'world'},\r
+
+      \    json { 'hello': 'Loïc'}\r
+
+      );"
+    languageId: oracle-sql
+  - kind: 1
+    value: "Resulting JSON patch (IETF RFC 6902):\r
+
+      \r
+
+      ```json\r
+
+      [{\"op\":\"replace\",\"path\":\"/hello\",\"value\":\"Loïc\"}]\r
+
+      ```"
+    languageId: markdown
