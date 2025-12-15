@@ -201,3 +201,7 @@ This [demo](./07-demo_security_hiding_columns.sqlnb) shows how an *invisible* co
 ### Demo #08 - JSON data transformation that can be used to modify JSON Schemas in SQL
 
 This [demo](./08-demo_json_schema_transformation.sqlnb) shows which SQL functions can be used to apply modifications to a JSON Schema. It also shows an example of bundling 3 JSON Schemas into one using SQL.
+
+### Demo #09 - JSON Schema generation with additional database metadata
+
+This [demo](./09-demo_json_generation_with_additional_database_metadata.sqlnb) shows how the database dictionary/metadata can be used to provide richer JSON Schema generated from database objects. We'll see an example where database annotations (table and columns), edition, data redaction policy, and other session related context can be used to modify generated JSON Schemas.

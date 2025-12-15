@@ -1,0 +1,750 @@
+cells:
+  - kind: 1
+    value: "### Richer Generated JSON Schema using Database dictionary\r
+
+      \r
+
+      As a fair reminder:\r
+
+      \r
+
+      ![](./img/database-json-schema-parallel.png)"
+    languageId: markdown
+  - kind: 1
+    value: "Using PL/SQL, one can modify a JSON document based on present field
+      names. Moreover, access to the database dictionary is made possible thanks
+      to numerous dictionary views.\r
+
+      \r
+
+      Also, JSON fields ordering is not mandatory as per the JSON standard
+      itself. But for a human and in the context of JSON schemas, it is better
+      for example to keep the keywords starting with a `$` at the top, and also
+      to keep the ordering consistent. That's why using PL/SQL, you may also be
+      able to guarantee field names ordering (only way so far as of 26ai).\r
+
+      \r\n"
+    languageId: markdown
+  - kind: 2
+    value: "-- This is used to order properly our field names within the generated
+      JSON Schema\r
+
+      \r
+
+      drop package if exists json_schema_helper;\r
+
+      \r
+
+      create or replace NONEDITIONABLE package json_schema_helper as\r
+
+      \  type keys_tbl is table of varchar2(4000) index by binary_integer;\r
+
+      \  function sort ( p_json_doc in clob ) return clob;\r
+
+      end;\r
+
+      /\r
+
+      \r
+
+      create or replace NONEDITIONABLE package body json_schema_helper as\r
+
+      \  function sort ( p_json_doc in clob ) return clob as\r
+
+      \    oo         json_object_t;\r
+
+      \    no         json_object_t;\r
+
+      \    l_clob     clob;\r
+
+      \    l_keys     json_key_list;\r
+
+      \    l_keys_tbl keys_tbl;\r
+
+      \    l_idx      number;\r
+
+      \  begin\r
+
+      \    oo := json_object_t.parse(p_json_doc);\r
+
+      \    no := json_object_t();\r
+
+      \    l_keys_tbl := keys_tbl();\r
+
+      \    l_keys := oo.get_keys();\r
+
+      \    for i in 1..l_keys.count loop\r
+
+      \      l_keys_tbl(i) := l_keys(i);\r
+
+      \    end loop;\r
+
+      \r
+
+      \    for key in (\r
+
+      \      select column_value as value\r
+
+      \        from table ( l_keys_tbl )\r
+
+      \       order by\r
+
+      \        case column_value\r
+
+      \          when '$id'          then 1\r
+
+      \          when '$schema'      then 2\r
+
+      \          when '$vocabulary'  then 3\r
+
+      \          when 'x-version'    then 4\r
+
+      \          when 'title'        then 5\r
+
+      \          when 'description'  then 6\r
+
+      \          when 'type'         then 7\r
+
+      \          when 'required'     then 8\r
+
+      \          when 'dbObject'     then 9\r
+
+      \          when 'dbObjectType' then 10\r
+
+      \          when 'examples'     then 11\r
+
+      \          when 'properties'   then 100\r
+
+      \          else 9999\r
+
+      \        end\r
+
+      \    ) loop\r
+
+      \      no.put(\r
+
+      \        key.value,\r
+
+      \        oo.get(key.value)\r
+
+      \      );\r
+
+      \    end loop;\r
+
+      \r
+
+      \    return no.to_clob;\r
+
+      \  end;\r
+
+      \r
+
+      end;\r
+
+      /"
+    languageId: oracle-sql
+  - kind: 1
+    value: "The following PL/SQL function uses several dictionary views to integrate
+      existing database metadata related to the object (table, view, etc.)
+      within the generated JSON schema:"
+    languageId: markdown
+  - kind: 2
+    value: "create or replace NONEDITIONABLE function getAnnotatedJSONSchema(
+      p_object_name in varchar2,\r
+
+      \                                                   p_edition in varchar2
+      default sys_context('USERENV','SESSION_EDITION_NAME') )\r
+
+      return clob\r
+
+      as\r
+
+      \  schema clob;\r
+
+      \  l_schema JSON_OBJECT_T;\r
+
+      \  l_vocabulary JSON_OBJECT_T;\r
+
+      \  l_properties JSON_OBJECT_T;\r
+
+      \  l_keys JSON_KEY_LIST;\r
+
+      \  l_column JSON_OBJECT_T;\r
+
+      \  l_version varchar2(128);\r
+
+      \  l_id varchar2(4000);\r
+
+      \  l_saved_edition varchar2(128);\r
+
+      \  l_policy_exists number;\r
+
+      begin\r
+
+      \  -- get JSON schema of object\r
+
+      \  begin\r
+
+      \    select json_serialize( dbms_json_schema.describe( p_object_name )\r
+
+      \                           returning clob ) into schema;\r
+
+      \  exception when others then\r
+
+      \    if SQLCODE = -4043 then\r
+
+      \        return to_clob('{\"error\":\"Object '||p_object_name||' can''t be
+      described for edition '||p_edition||' as current edition is
+      '||sys_context('USERENV','SESSION_EDITION_NAME')||'.\"}');\r
+
+      \    end if;\r
+
+      \  end;\r
+
+      \r
+
+      \  l_schema := JSON_OBJECT_T.parse( schema );\r
+
+      \r
+
+      \  if l_schema.has('$id') then\r
+
+      \    l_id := l_schema.get_string('$id');\r
+
+      \  else\r
+
+      \  with info as (select sys_context('USERENV','CDB_NAME') as cdb,\r
+
+      \              sys_context('USERENV','CDB_DOMAIN') as cdb_domain,\r
+
+      \              sys_context('USERENV','DB_NAME') as db,\r
+
+      \              sys_context('USERENV','DB_DOMAIN') as db_domain,\r
+
+      \              decode( p_edition,'ORA$BASE','1.0.0', p_edition) as
+      version\r
+
+      \             )\r
+
+      \    select lower('https://' || cdb\r
+
+      \    || nvl2( cdb_domain, '.' || cdb_domain || '/', '/') \r
+
+      \    || db\r
+
+      \    || nvl2( db_domain, '.' || db_domain || '/', '/') \r
+
+      \    || sys_context('USERENV','CURRENT_SCHEMA')\r
+
+      \    || '/' || p_object_name\r
+
+      \    || nvl2( version, '/' || version, '') \r
+
+      \    ) as uri into l_id\r
+
+      \    from info;\r
+
+      \  end if;\r
+
+      \r
+
+      \    l_properties := l_schema.get_Object('properties');\r
+
+      \r
+
+      \    -- reordering the JSON fields\r
+
+      \    l_schema.remove('properties');\r
+
+      \    l_schema.put( '$id', l_id );\r
+
+      \    l_schema.put( '$schema',
+      'https://json-schema.org/draft/2020-12/schema' );\r
+
+      \    l_vocabulary := JSON_OBJECT_T.parse('{}');\r
+
+      \    l_vocabulary.put('https://json-schema.org/draft/2020-12/vocab/databa\
+      se',false);\r
+
+      \    l_schema.put( '$vocabulary', l_vocabulary );\r
+
+      \    if l_properties is not null then\r
+
+      \      l_schema.put('properties', l_properties);\r
+
+      \    end if;\r
+
+      \r
+
+      \  -- object level\r
+
+      \  l_keys := l_schema.get_Keys();\r
+
+      \r
+
+      \  for c in (select ANNOTATION_NAME, ANNOTATION_VALUE\r
+
+      \              from user_annotations_usage_ae\r
+
+      \             where object_name=p_object_name\r
+
+      \               and edition_name=p_edition\r
+
+      \               and column_name is null\r
+
+      \             order by 1)\r
+
+      \  loop\r
+
+      \    l_schema.remove('properties');\r
+
+      \    if c.ANNOTATION_NAME = 'examples' then\r
+
+      \      l_schema.put( 'examples', JSON_ARRAY_T.parse( c.ANNOTATION_VALUE )
+      );\r
+
+      \    else\r
+
+      \      l_schema.put( c.ANNOTATION_NAME, c.ANNOTATION_VALUE );\r
+
+      \    end if;\r
+
+      \    if l_properties is not null then\r
+
+      \      l_schema.put('properties', l_properties);\r
+
+      \    end if;\r
+
+      \  end loop;\r
+
+      \r
+
+      \  -- columns level\r
+
+      \  if l_properties is not null then\r
+
+      \    l_keys := l_properties.get_Keys();\r
+
+      \    for i in 1..l_keys.count loop\r
+
+      \      l_column := l_properties.get_Object( l_keys(i) );\r
+
+      \r
+
+      \      for c in (select ANNOTATION_NAME, ANNOTATION_VALUE \r
+
+      \                  from user_annotations_usage_ae\r
+
+      \                where object_name=p_object_name \r
+
+      \                  and edition_name=p_edition\r
+
+      \                  and column_name=l_keys(i))\r
+
+      \      loop\r
+
+      \        l_column.put( c.ANNOTATION_NAME, c.ANNOTATION_VALUE );\r
+
+      \      end loop;\r
+
+      \r
+
+      \      -- data redaction policy?\r
+
+      \      select count(*) into l_policy_exists \r
+
+      \        from REDACTION_COLUMNS\r
+
+      \       where object_owner = user\r
+
+      \         and object_name = p_object_name\r
+
+      \         and column_name = l_keys(i)\r
+
+      \         and FUNCTION_TYPE != 'NONE';\r
+
+      \r
+
+      \      if l_policy_exists > 0 then\r
+
+      \        l_column.put( 'x-sensitive', TRUE );\r
+
+      \      end if;\r
+
+      \r
+
+      \    end loop;\r
+
+      \  end if;\r
+
+      \r
+
+      \  if p_edition != 'ORA$BASE' then\r
+
+      \    -- reordering the JSON fields\r
+
+      \    l_schema.remove('properties');\r
+
+      \    l_schema.put( 'x-version', p_edition );\r
+
+      \  end if;\r
+
+      \r
+
+      \  if l_properties is not null then\r
+
+      \    l_schema.put('properties', l_properties);\r
+
+      \  end if;\r
+
+      \r
+
+      \  return json_schema_helper.sort( l_schema.to_clob );\r
+
+      end;\r
+
+      /\r\n"
+    languageId: oracle-sql
+  - kind: 1
+    value: "Using the EMP_T table created in [demo
+      #03](./03-demo_json_schema_management_create_or_store.sqlnb):\r\n"
+    languageId: markdown
+  - kind: 2
+    value: "CREATE EDITION if not exists \"1.0.2\";\r
+
+      \r
+
+      alter session set edition=\"1.0.2\";\r
+
+      CREATE OR REPLACE EDITIONING VIEW emp (\r
+
+      \    empno, \r
+
+      \    ename annotations (add \"description\" 'Employee Name'), \r
+
+      \    job annotations (add \"description\" 'Employee Job'), \r
+
+      \    mgr annotations (add \"description\" 'Employee Manager'), \r
+
+      \    hiredate annotations (add \"description\" 'Employee Name'), \r
+
+      \    sal, \r
+
+      \    comm, \r
+
+      \    deptno\r
+
+      )\r
+
+      annotations (add \"description\" 'Employees View v1.0.2', \r
+
+      \             add \"examples\" '[
+      {\"empno\":\"1\",\"ename\":\"Loïc\",\"job\":\"Senior Product
+      Manager\",\"mgr\":\"Gerald\"}]') AS \r
+
+      SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno FROM emp_t;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "select json_serialize( \r
+
+      \    getAnnotatedJSONSchema('EMP') -- editioning view!\r
+
+      \    returning varchar2 pretty\r
+
+      ) as json_schema;"
+    languageId: oracle-sql
+  - kind: 1
+    value: "Resulting JSON Schema:\r
+
+      \r
+
+      ```json\r
+
+      {\r
+
+      \  \"$id\" : \"https://free/freepdb1/developer/emp/1.0.2\",\r
+
+      \  \"$schema\" : \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \  \"$vocabulary\" :\r
+
+      \  {\r
+
+      \    \"https://json-schema.org/draft/2020-12/vocab/database\" : false\r
+
+      \  },\r
+
+      \  \"x-version\" : \"1.0.2\",\r
+
+      \  \"title\" : \"EMP\",\r
+
+      \  \"description\" : \"Employees View v1.0.2\",\r
+
+      \  \"type\" : \"object\",\r
+
+      \  \"required\" :\r
+
+      \  [\r
+
+      \    \"EMPNO\"\r
+
+      \  ],\r
+
+      \  \"dbObject\" : \"DEVELOPER.EMP\",\r
+
+      \  \"dbObjectType\" : \"view\",\r
+
+      \  \"examples\" :\r
+
+      \  [\r
+
+      \    {\r
+
+      \      \"empno\" : \"1\",\r
+
+      \      \"ename\" : \"Loïc\",\r
+
+      \      \"job\" : \"Senior Product Manager\",\r
+
+      \      \"mgr\" : \"Gerald\"\r
+
+      \    }\r
+
+      \  ],\r
+
+      \  \"properties\" :\r
+
+      \  {\r
+
+      \    \"EMPNO\" :\r
+
+      \    {\r
+
+      \      \"type\" : \"number\",\r
+
+      \      \"extendedType\" : \"number\"\r
+
+      \    },\r
+
+      \    \"ENAME\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"string\",\r
+
+      \          \"maxLength\" : 10\r
+
+      \        }\r
+
+      \      ],\r
+
+      \      \"description\" : \"Employee Name\"\r
+
+      \    },\r
+
+      \    \"JOB\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"string\",\r
+
+      \          \"maxLength\" : 9\r
+
+      \        }\r
+
+      \      ],\r
+
+      \      \"description\" : \"Employee Job\"\r
+
+      \    },\r
+
+      \    \"MGR\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\"\r
+
+      \        }\r
+
+      \      ],\r
+
+      \      \"description\" : \"Employee Manager\"\r
+
+      \    },\r
+
+      \    \"HIREDATE\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"date\"\r
+
+      \        }\r
+
+      \      ],\r
+
+      \      \"description\" : \"Employee Name\"\r
+
+      \    },\r
+
+      \    \"SAL\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\",\r
+
+      \          \"sqlPrecision\" : 7,\r
+
+      \          \"sqlScale\" : 2\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"COMM\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\",\r
+
+      \          \"sqlPrecision\" : 7,\r
+
+      \          \"sqlScale\" : 2\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"DEPTNO\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\"\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      ```"
+    languageId: markdown
