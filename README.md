@@ -193,3 +193,7 @@ This [demo](./05-demo_enums_support.sqlnb) shows that the JSON Schema generation
 ### Demo #06 - Using *Flexible* Data Use Case Domain to version JSON Schema for data validation
 
 This [demo](./06-demo_flexible_domain_for_versioning.sqlnb) shows how *flexible* data use case domain can be used to let the database dynamically choose which JSON Schema version to use for data validation.
+
+### Demo #07 - Hiding columns from generated JSON Schema
+
+This [demo](./07-demo_security_hiding_columns.sqlnb) shows how an *invisible* column is not taken into account in the JSON Schema generation process.

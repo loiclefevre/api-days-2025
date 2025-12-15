@@ -1,0 +1,49 @@
+cells:
+  - kind: 1
+    value: "### Using relational model capability to hide properties from generated
+      JSON Schema\r
+
+      \r
+
+      A column can be made `invisible`, and it is not considered for JSON Schema
+      generation."
+    languageId: markdown
+  - kind: 2
+    value: "drop table if exists traders purge;\r
+
+      \r
+
+      create table traders ( \r
+
+      \    name varchar2(100), \r
+
+      \    salary number invisible -- column is not visible by default\r
+
+      );\r
+
+      \r
+
+      -- works when salary column named explicitly\r
+
+      insert into traders(name,salary)\r
+
+      values ('Loïc',1000000);\r
+
+      commit;\r
+
+      \r
+
+      -- salary column not displayed when describing the table...\r
+
+      desc traders; \r
+
+      -- ... nor when using the *\r
+
+      select * from traders;\r
+
+      \r
+
+      -- invisible salary column does not appear in the generated JSON Schema\r
+
+      select DBMS_JSON_SCHEMA.DESCRIBE('TRADERS');"
+    languageId: oracle-sql
