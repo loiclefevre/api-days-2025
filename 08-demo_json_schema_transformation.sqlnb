@@ -85,3 +85,181 @@ cells:
 
       ```"
     languageId: markdown
+  - kind: 1
+    value: "### Bundling JSON Schemas in SQL\r
+
+      \r
+
+      Example from this [JSON Schema blog
+      post](https://json-schema.org/blog/posts/bundling-json-schema-compound-do\
+      cuments)."
+    languageId: markdown
+  - kind: 2
+    value: "-- cleanup\r
+
+      drop domain if exists \"https://jsonschema.dev/schemas/mixins/integer\"
+      force;\r
+
+      drop domain if exists
+      \"https://jsonschema.dev/schemas/mixins/non-negative\" force;\r
+
+      drop domain if exists
+      \"https://jsonschema.dev/schemas/examples/non-negative-integer\" force;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "create domain \"https://jsonschema.dev/schemas/mixins/integer\" as
+      json\r
+
+      validate '{\r
+
+      \  \"$id\": \"https://jsonschema.dev/schemas/mixins/integer\",\r
+
+      \  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \  \"description\": \"Must be an integer\",\r
+
+      \  \"type\": \"integer\"\r
+
+      }';\r
+
+      \r
+
+      create domain \"https://jsonschema.dev/schemas/mixins/non-negative\" as
+      json\r
+
+      validate '{\r
+
+      \  \"$id\": \"https://jsonschema.dev/schemas/mixins/non-negative\",\r
+
+      \  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \  \"description\": \"Not allowed to be negative\",\r
+
+      \  \"minimum\": 0\r
+
+      }';\r
+
+      \r
+
+      create domain
+      \"https://jsonschema.dev/schemas/examples/non-negative-integer\" as json\r
+
+      validate '{\r
+
+      \  \"$id\":
+      \"https://jsonschema.dev/schemas/examples/non-negative-integer\",\r
+
+      \  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \  \"description\": \"Must be a non-negative integer\",\r
+
+      \  \"$comment\": \"A JSON Schema that uses multiple external
+      references\",\r
+
+      \  \"$defs\": {\r
+
+      \    \"nonNegativeInteger\": {\r
+
+      \      \"allOf\": [\r
+
+      \        {\r
+
+      \          \"$ref\": \"/schemas/mixins/integer\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"$ref\": \"/schemas/mixins/non-negative\"\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    }\r
+
+      \  },\r
+
+      \  \"$ref\": \"#/$defs/nonNegativeInteger\"\r
+
+      }';"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Bundling JSON Schemas in 29 lines of SQL\r
+
+      -- 1- get JSON Schema from Domain\r
+
+      -- 2- retrieve $id and compute root\r
+
+      -- 3- iterate over $defs..allOf[ $ref ] and create a JSON Patch (RFC
+      6902)\r
+
+      -- 4- iterate over the referenced JSON schemas and add them to the main
+      JSON schema using JSON_Patch function\r
+
+      -- 5- return the last one\r
+
+      with\r
+
+      my_schema(schema) as ( select
+      DBMS_JSON_SCHEMA.describe('https://jsonschema.dev/schemas/examples/non-ne\
+      gative-integer') ),\r
+
+      my_schema_info(schema, main_id, root) as (\r
+
+      \     select ms.schema, ms.schema.\"$id\".string(),\r
+
+      \            regexp_substr(ms.schema.\"$id\".string(), 'https?://[^/]+')\r
+
+      \     from my_schema ms\r
+
+      ),\r
+
+      derefs_with_patch(row_number, schema, main_id, root, ref, patch) as (\r
+
+      select rownum, d.schema, d.main_id, d.root, refs.ref,\r
+
+      \       json [ json { 'op':'add', 'path': '/$defs/' ||
+      replace(d.root||refs.ref,'/','~0' ),\r
+
+      \                     'value': DBMS_JSON_SCHEMA.describe(d.root||refs.ref)
+      } ]\r
+
+      \  from my_schema_info d,\r
+
+      \       json_table( d.schema, '$.\"$defs\"..allOf[*]' columns (ref path
+      '$.\"$ref\"') ) refs\r
+
+      ),\r
+
+      final_derefs(id,schema) as (\r
+
+      \    -- level 0: one row to get the original schema\r
+
+      \    select 0, d.schema\r
+
+      \      from derefs_with_patch d \r
+
+      \     where d.row_number = 1\r
+
+      \    union ALL\r
+
+      \    -- recursive part to apply one after the other the patch\r
+
+      \    select p.row_number, \r
+
+      \           json_patch( d.schema, p.patch ) \r
+
+      \      from derefs_with_patch p, final_derefs d\r
+
+      \     where p.row_number = d.id+1\r
+
+      )\r
+
+      CYCLE id SET cycle TO 1 DEFAULT 0\r
+
+      select json_serialize( schema returning clob value pretty) as
+      bundled_schema from final_derefs\r
+
+      order by id desc fetch first row only;"
+    languageId: oracle-sql

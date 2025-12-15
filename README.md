@@ -200,4 +200,4 @@ This [demo](./07-demo_security_hiding_columns.sqlnb) shows how an *invisible* co
 
 ### Demo #08 - JSON data transformation that can be used to modify JSON Schemas in SQL
 
-This [demo](./08-demo_json_schema_transformation.sqlnb) shows which SQL functions can be used to apply modifications to a JSON Schema.
+This [demo](./08-demo_json_schema_transformation.sqlnb) shows which SQL functions can be used to apply modifications to a JSON Schema. It also shows an example of bundling 3 JSON Schemas into one using SQL.
