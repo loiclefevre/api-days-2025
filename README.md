@@ -24,6 +24,8 @@ podman run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD=free -e APP_USER=dev
 This command will configure a user named `developer` whose password will be `free`.
 
 #### Enable MAX_STRING_SIZE=EXTENDED
+These commands are based on the excellent [blog post](https://oracle-base.com/articles/12c/extended-data-types-12cR1#enabling-extended-data-types-pdb) from Tim Hall.
+
 From within a container shell:
 ```bash
 podman exec -it oracle /bin/bash
@@ -63,6 +65,8 @@ First unzip the 3-files zip archive (first volume is ALL-MINILM-L12-V2.zip.001) 
 ```bash
 podman cp ALL-MINILM-L12-V2.onnx oracle:/opt/oracle/
 ```
+
+The model is a slighlty modified version of this [model](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2) so that it is compatible with the Oracle AI database 26ai.
 
 ### Oracle REST Data Services Installation
 - Download from: [here](https://download.oracle.com/otn_software/java/ords/ords-latest.zip)
