@@ -181,3 +181,7 @@ This [demo](./03-demo_json_schema_management_create_or_store.sqlnb) shows:
 ### Demo #04 - Infer a relational model from a JSON Schema
 
 This [demo](./04-demo_infer_relational_model_from_json_schema.sqlnb) demonstrates the use of the package `dbms_json_duality_view` and its functions `infer_schema` and `generate_schema`. It uses a JSON Schema which defines an array of objects which translates into 2 tables with a parent-child relationship materialized by a foreign key constraint.
+
+### Demo #05 - Data Use Case Domain based SQL Enum support
+
+This [demo](./05-demo_enums_support.sqlnb) shows that the JSON Schema generation feature supports SQL Enums, based on Data Use Case Domains.

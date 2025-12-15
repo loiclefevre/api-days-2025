@@ -1,0 +1,109 @@
+cells:
+  - kind: 1
+    value: "### Data Use Case Domains based Enums, and their support with JSON Schema"
+    languageId: markdown
+  - kind: 2
+    value: "drop domain currencies force;\r
+
+      \r
+
+      -- Create an enum for currencies\r
+
+      create domain currencies as enum ( \r
+
+      \    EUR='EUR', \r
+
+      \    USD='USD' \r
+
+      );\r
+
+      \r
+
+      drop table if exists bank_transfers purge;\r
+
+      \r
+
+      -- Create a table which uses the data use case domain\r
+
+      create table bank_transfers ( \r
+
+      \    amount number not null, \r
+
+      \    currency currencies not null,\r
+
+      \    sepa boolean not null\r
+
+      );\r
+
+      \r
+
+      -- insert a row to see how we can use the SQL enum\r
+
+      insert into BANK_TRANSFERS \r
+
+      values ( 42, currencies.EUR, true );\r
+
+      commit;\r
+
+      \r
+
+      -- generating the JSON Schema translates into...🥁\r
+
+      select json_serialize( dbms_json_schema.DESCRIBE('BANK_TRANSFERS')
+      returning clob pretty);"
+    languageId: oracle-sql
+  - kind: 1
+    value: "```json\r
+
+      {\r
+
+      \  \"title\" : \"BANK_TRANSFERS\",\r
+
+      \  \"dbObject\" : \"DEVELOPER.BANK_TRANSFERS\",\r
+
+      \  \"type\" : \"object\",\r
+
+      \  \"dbObjectType\" : \"table\",\r
+
+      \  \"properties\" : {\r
+
+      \    \"AMOUNT\" : {\r
+
+      \      \"type\" : \"number\", \"extendedType\" : \"number\" \r
+
+      \    },\r
+
+      \    \"CURRENCY\" : {\r
+
+      \      \"type\" : \"string\", \"extendedType\" : \"string\",\r
+
+      \      \"maxLength\" : 6, \"dbDomain\" : \"DEVELOPER.CURRENCIES\",\r
+
+      \      \"allOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"enum\" : [ \"EUR\", \"USD\" ]\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"SEPA\" : {\r
+
+      \      \"type\" : \"boolean\", \"extendedType\" : \"boolean\"\r
+
+      \    }\r
+
+      \  },\r
+
+      \  \"required\" : [ \"AMOUNT\", \"CURRENCY\", \"SEPA\" ]\r
+
+      }\r
+
+      ```"
+    languageId: markdown
