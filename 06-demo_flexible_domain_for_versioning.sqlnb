@@ -1,0 +1,105 @@
+cells:
+  - kind: 1
+    value: "### Flexible Data Use Case Domain to help versioning your JSON Schemas\r
+
+      \r
+
+      Flexible data use case domain can help supporting multiple JSON Schemas to
+      validate JSON documents stored within the very same collection. The choice
+      of which JSON Schema to be used for validation is based on a field (here:
+      `x-version`) of the JSON document."
+    languageId: markdown
+  - kind: 1
+    value: "We'll use the `my_domain` **flexible** domain which will be based on 3
+      others JSON Schema based data use case domains:\r
+
+      \r
+
+      ![](./img/flexible-domain-for-versioning.png)"
+    languageId: markdown
+  - kind: 2
+    value: "-- cleanup\r
+
+      drop domain if exists my_domain force;\r
+
+      drop domain if exists \"1.0.0\" force;\r
+
+      drop domain if exists \"1.0.1\" force;\r
+
+      drop domain if exists impossible force;\r
+
+      drop table if exists table_with_versioned_schemas purge;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- first JSON Schema for version 1.0.0\r
+
+      create domain \"1.0.0\" as json validate
+      '{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}';\r
+
+      -- second JSON Schema for version 1.0.1\r
+
+      create domain \"1.0.1\" as json validate
+      '{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\
+      \"type\":\"number\"}}}';\r
+
+      -- a fallback domain called impossible (will produce an error whatever
+      data)\r
+
+      create domain impossible as json validate
+      '{\"additionalProperties\":false}';\r
+
+      \r
+
+      -- Flexible data use case domain based on a version column\r
+
+      create flexible domain my_domain (data) choose domain using (version
+      varchar2(100))\r
+
+      from case\r
+
+      \       when version = '1.0.0' then \"1.0.0\"(data)\r
+
+      \       when version = '1.0.1' then \"1.0.1\"(data)\r
+
+      \       else impossible(data)\r
+
+      \     end;\r
+
+      \r
+
+      create table table_with_versioned_schemas (\r
+
+      \    -- this virtual column will contain the value of field x-version
+      within the JSON document\r
+
+      \    version varchar2(100) as (json_value(data,'$.\"x-version\".string()'
+      \r
+
+      \                              returning varchar2(100))) not null,\r
+
+      \    data json,\r
+
+      \    domain my_domain(data) using (version)\r
+
+      );\r
+
+      \r
+
+      insert into table_with_versioned_schemas(data)\r
+
+      values('{\"x-version\":\"1.0.0\",\"a\":\"works\"}');\r
+
+      commit;\r
+
+      \r
+
+      insert into table_with_versioned_schemas(data)\r
+
+      values('{\"x-version\":\"1.0.1\",\"b\": \"fails\"}');\r
+
+      commit;\r
+
+      \r
+
+      select * from table_with_versioned_schemas;\r\n"
+    languageId: oracle-sql

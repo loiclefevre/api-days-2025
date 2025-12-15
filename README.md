@@ -189,3 +189,7 @@ This [demo](./04-demo_infer_relational_model_from_json_schema.sqlnb) demonstrate
 ### Demo #05 - Data Use Case Domain based SQL Enum support
 
 This [demo](./05-demo_enums_support.sqlnb) shows that the JSON Schema generation feature supports SQL Enums, based on Data Use Case Domains.
+
+### Demo #06 - Using *Flexible* Data Use Case Domain to version JSON Schema for data validation
+
+This [demo](./06-demo_flexible_domain_for_versioning.sqlnb) shows how *flexible* data use case domain can be used to let the database dynamically choose which JSON Schema version to use for data validation.
