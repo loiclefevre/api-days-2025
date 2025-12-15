@@ -1,0 +1,138 @@
+cells:
+  - kind: 1
+    value: "### Create relatioanl model from JSON Schema 🤯"
+    languageId: markdown
+  - kind: 2
+    value: "drop table if exists students_tab purge;\r
+
+      \r
+
+      -- Create a table with a JSON column having a JSON Schema\r
+
+      create table students_tab (\r
+
+      \    data json validate '{\r
+
+      \        \"title\": \"students\",\r
+
+      \        \"description\": \"Students with hobbies\",\r
+
+      \        \"type\": \"object\",\r
+
+      \        \"properties\": {\r
+
+      \            \"name\": { \"type\": \"string\", \"maxLength\": 128 },\r
+
+      \            \"age\": { \"type\": \"number\" },\r
+
+      \            \"hobbies\": {\r
+
+      \                \"type\": \"array\",\r
+
+      \                \"items\": {\r
+
+      \                    \"type\": \"object\",\r
+
+      \                    \"properties\": {\r
+
+      \                        \"name\": { \"type\": \"string\", \"maxLength\":
+      64 }\r
+
+      \                    },\r
+
+      \                    \"required\": [\"name\"]\r
+
+      \                }\r
+
+      \            }\r
+
+      \        },\r
+
+      \        \"required\": [\"name\", \"age\", \"hobbies\"]\r
+
+      \    }');"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Now infer the relational model from the JSON Schema\r
+
+      declare\r
+
+      \  schema_json json;\r
+
+      \  schema clob;\r
+
+      \  ddl_sql  clob;\r
+
+      begin\r
+
+      \  -- infer schema\r
+
+      \  schema_json :=\r
+
+      \    dbms_json_duality.infer_schema(\r
+
+      \    json('{\r
+
+      \           \"tableNames\"    : [\"STUDENTS_TAB\"],\r
+
+      \           \"viewNames\"     : [\"STUDENTS\"],\r
+
+      \           \"normalize\"     : true,\r
+
+      \           \"useFlexFields\" : true,\r
+
+      \           \"updatability\"  : true\r
+
+      \          }'));\r
+
+      \r
+
+      \  -- display it\r
+
+      \  select json_serialize( schema_json returning clob value pretty ) into
+      schema;\r
+
+      \  dbms_output.PUT_LINE(schema);\r
+
+      \r
+
+      \  -- now create the database objects!\r
+
+      \  ddl_sql := dbms_json_duality.generate_schema( schema_json );\r
+
+      \r
+
+      \  dbms_output.PUT_LINE( ddl_sql );\r
+
+      \r
+
+      \ execute immediate ddl_sql;\r
+
+      end;\r
+
+      /"
+    languageId: oracle-sql
+  - kind: 1
+    value: "The command above creates both a relational model:\r
+
+      \r
+
+      ![](./img/relational-model.png)\r
+
+      \r
+
+      And a JSON Relational Duality View:\r
+
+      \r
+
+      ![](./img/json-relational-duality-view.png)\r\n"
+    languageId: markdown
+  - kind: 2
+    value: "-- cleanup\r
+
+      drop view if exists students;\r
+
+      drop table if exists students_hobbies purge;\r
+
+      drop table if exists students_root purge;"
+    languageId: oracle-sql

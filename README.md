@@ -164,11 +164,11 @@ grant select on redaction_columns to developer;
 
 ### Demo #01 - Install the Yaml-JSON JavaScript library
 
-This [demo](vscode://./01-demo_yaml_json.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert Yaml file into JSON.
+This [demo](./01-demo_yaml_json.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert Yaml file into JSON.
 
 ### Demo #02 - Install the Toon JavaScript library
 
-This [demo](https://github.com/loiclefevre/api-days-2025/blob/main/02-demo_json_toon.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert JSON into TOON format for LLM training.
+This [demo](./02-demo_json_toon.sqlnb) shows how to load a JavaScript library and map the PL/SQL function onto exported functions to be able to then convert JSON into TOON format for LLM training.
 
 ### Demo #03 - JSON Schema management create or store
 
@@ -178,3 +178,6 @@ This [demo](./03-demo_json_schema_management_create_or_store.sqlnb) shows:
 - how to create a Data Use Case Domain with a JSON Schema attached to it as a CHECK constraint to validate JSON documents
 - how to create a table with a JSON column and insert a JSON Schema into it
 
+### Demo #04 - Infer a relational model from a JSON Schema
+
+This [demo](./04-demo_infer_relational_model_from_json_schema.sqlnb) demonstrates the use of the package `dbms_json_duality_view` and its functions `infer_schema` and `generate_schema`. It uses a JSON Schema which defines an array of objects which translates into 2 tables with a parent-child relationship materialized by a foreign key constraint.
