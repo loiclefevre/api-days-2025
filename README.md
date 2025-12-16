@@ -209,3 +209,7 @@ This [demo](./09-demo_json_generation_with_additional_database_metadata.sqlnb) s
 ### Demo #10 - REST API for JSON Schema catalog
 
 This [demo](./10-demo_REST_API_JSON_Schema_catalog.sqlnb) shows how to leverage Oracle REST Data Services (ORDS) to build a JSON Schema catalog accessible via a REST API.
+
+### Demo #11 - Kafka-compatible Transactional Event Queue (TEQ) protected with JSON Schema validation
+
+This [demo](./11-demo_transactional_event_queue.sqlnb) shows how to create a Transactional Event Queue that has its JSON payload column protected by a JSON Schema thanks (again) to a Data Use Case Domain.

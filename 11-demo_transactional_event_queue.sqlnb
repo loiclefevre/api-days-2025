@@ -1,0 +1,259 @@
+cells:
+  - kind: 1
+    value: "### Kafka-compatible Transactional Event Queue (TEQ) protected with JSON
+      Schema validation\r
+
+      \r
+
+      Queue that supports JSON payloads will be protected by a JSON Schema. Note
+      that this type of queue is transactional, meaning you have to commit the
+      transaction in order to enqueue the event/message. When you commit the
+      transaction, any other DML is committed as well: you can mix
+      enqueuing/dequeuing/DML within the very same transaction."
+    languageId: markdown
+  - kind: 2
+    value: "-- we create a queue that is not started yet\r
+
+      begin\r
+
+      \    dbms_aqadm.create_transactional_event_queue(\r
+
+      \        queue_name => 'events', \r
+
+      \        storage_clause => 'tablespace users', \r
+
+      \        multiple_consumers => false,\r
+
+      \        max_retries => 10,\r
+
+      \        queue_payload_type => 'JSON');\r
+
+      end;\r
+
+      /\r
+
+      \r
+
+      desc events;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- let's create this famous data use case domain with a JSON Schema\r
+
+      create domain blogpost as JSON\r
+
+      validate cast using '{\r
+
+      \    \"$id\": \"https://example.com/blog-post.schema.json\",\r
+
+      \    \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \    \"description\": \"A representation of a blog post\",\r
+
+      \    \"type\": \"object\",\r
+
+      \    \"required\": [\"title\", \"content\", \"author\"],\r
+
+      \    \"properties\": {\r
+
+      \      \"title\": {\r
+
+      \        \"type\": \"string\"\r
+
+      \      },\r
+
+      \      \"content\": {\r
+
+      \        \"type\": \"string\"\r
+
+      \      },\r
+
+      \      \"publishedDate\": {\r
+
+      \        \"type\": \"string\",\r
+
+      \        \"format\": \"date-time\"\r
+
+      \      },\r
+
+      \      \"author\": {\r
+
+      \        \"$ref\": \"https://example.com/user-profile.schema.json\"\r
+
+      \      },\r
+
+      \      \"tags\": {\r
+
+      \        \"type\": \"array\",\r
+
+      \        \"items\": {\r
+
+      \          \"type\": \"string\"\r
+
+      \        }\r
+
+      \      }\r
+
+      \    },\r
+
+      \    \"$def\": {\r
+
+      \      \"$id\": \"https://example.com/user-profile.schema.json\",\r
+
+      \      \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \      \"description\": \"A representation of a user profile\",\r
+
+      \      \"type\": \"object\",\r
+
+      \      \"required\": [\"username\", \"email\"],\r
+
+      \      \"properties\": {\r
+
+      \        \"username\": {\r
+
+      \          \"type\": \"string\"\r
+
+      \        },\r
+
+      \        \"email\": {\r
+
+      \          \"type\": \"string\",\r
+
+      \          \"format\": \"email\"\r
+
+      \        },\r
+
+      \        \"fullName\": {\r
+
+      \          \"type\": \"string\"\r
+
+      \        },\r
+
+      \        \"age\": {\r
+
+      \          \"type\": \"integer\",\r
+
+      \          \"minimum\": 0\r
+
+      \        },\r
+
+      \        \"location\": {\r
+
+      \          \"type\": \"string\"\r
+
+      \        },\r
+
+      \        \"interests\": {\r
+
+      \          \"type\": \"array\",\r
+
+      \          \"items\": {\r
+
+      \            \"type\": \"string\"\r
+
+      \          }\r
+
+      \        }\r
+
+      \      }\r
+
+      \    }\r
+
+      \  }';\r
+
+      \r
+
+      -- Set the right JSON Schema to be used for the JSON queue payload  \r
+
+      alter table events modify user_data domain blogpost;\r
+
+      \r
+
+      desc events;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Starts the queue...\r
+
+      begin\r
+
+      \   dbms_aqadm.start_queue( queue_name => 'events', \r
+
+      \                           enqueue => true, \r
+
+      \                           dequeue => true);\r
+
+      end;\r
+
+      /"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- enqueue a message using PL/SQL\r
+
+      declare\r
+
+      \   l_id raw(16);\r
+
+      \   enqueue_options     dbms_aq.enqueue_options_t; \r
+
+      \   message_properties  dbms_aq.message_properties_t; \r
+
+      \   message             JSON; \r
+
+      begin\r
+
+      \   message :=  json(q'!{\"title\": \"New Blog Post\",\r
+
+      \                        \"content\": \"This is the content of the blog
+      post...\",\r
+
+      \        \"publishedDate\": \"2023-08-25T15:00:00Z\",\r
+
+      \        \"author\": {\r
+
+      \            \"username\": \"authoruser\",\r
+
+      \            \"email\": \"author@example.com\"\r
+
+      \        },\r
+
+      \        \"tags\": [\"Technology\", \"Programming\"]}!'); \r
+
+      DBMS_AQ.ENQUEUE (\r
+
+      \   queue_name          => 'events',\r
+
+      \   enqueue_options     => enqueue_options,\r
+
+      \   message_properties  => message_properties,\r
+
+      \   payload             => message,\r
+
+      \   msgid               => l_id);\r
+
+      \   commit;\r
+
+      end;\r
+
+      /\r
+
+      \r
+
+      -- see the message\r
+
+      select user_data from events;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- cleanup\r
+
+      begin\r
+
+      \    dbms_aqadm.stop_queue(queue_name => 'events');\r
+
+      \r
+
+      \    dbms_aqadm.drop_transactional_event_queue(queue_name => 'events');\r
+
+      end;\r
+
+      /"
+    languageId: oracle-sql
