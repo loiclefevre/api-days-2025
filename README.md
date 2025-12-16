@@ -92,7 +92,7 @@ REM not standard setting
 .\ords.exe --config %ORDS_CONFIG_FOLDER% config set jdbc.InitialLimit 20
 .\ords.exe --config %ORDS_CONFIG_FOLDER% config set jdbc.MaxLimit 20
 
-REM Prepare for hosting static files
+REM Prepare for hosting static files (such as JSON schema, meta, vocab...)
 mkdir ..\config\global\doc_root
 
 REM START!
