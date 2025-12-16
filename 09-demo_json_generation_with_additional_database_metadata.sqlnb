@@ -748,3 +748,164 @@ cells:
 
       ```"
     languageId: markdown
+  - kind: 1
+    value: "### Enriching generated JSON Schema with security metadata\r
+
+      \r
+
+      Oracle AI Database 26ai comes with numerous security features. One of them
+      is called *data redaction*. It allows to redact data for example to mask
+      part of column values. Defining a data redaction policy on a column is an
+      information stored within the database metadata (aka the database
+      dictionary). The `getAnnotatedJSONSchema()` function above can leverage
+      this to include a new keyword such as `x-sensitive` to inform that such a
+      field is highly sensitive and must be treated as such. Use case example:
+      use the JSON Schema to build a form for the UI, and set a password input
+      field to mask the real value.\r
+
+      \r
+
+      The following example is based on [demo
+      #07](./07-demo_security_hiding_columns.sqlnb)."
+    languageId: markdown
+  - kind: 2
+    value: "-- Makes the salary column visible again\r
+
+      alter table traders modify ( salary visible );\r
+
+      \r
+
+      -- add data redaction policy on salary column\r
+
+      begin\r
+
+      \  DBMS_REDACT.ADD_POLICY(\r
+
+      \    object_schema    => user,\r
+
+      \    object_name      => 'TRADERS',\r
+
+      \    column_name      => 'SALARY',\r
+
+      \    policy_name      => 'hide_salary_policy',\r
+
+      \    function_type    => dbms_redact.nullify,\r
+
+      \    expression       => '1=1'); -- for all users\r
+
+      end;\r
+
+      /\r
+
+      \r
+
+      -- shows SALARY column but redacted (nullified)\r
+
+      select * from traders;\r
+
+      \r
+
+      select json_serialize( getAnnotatedJSONSchema('TRADERS') pretty ) as
+      JSON_SCHEMA;\r\n"
+    languageId: oracle-sql
+  - kind: 1
+    value: "Result:\r
+
+      \r
+
+      ```json\r
+
+      {\r
+
+      \  \"$id\" : \"https://free/freepdb1/developer/traders/1.0.2\",\r
+
+      \  \"$schema\" : \"https://json-schema.org/draft/2020-12/schema\",\r
+
+      \  \"$vocabulary\" :\r
+
+      \  {\r
+
+      \    \"https://json-schema.org/draft/2020-12/vocab/database\" : false\r
+
+      \  },\r
+
+      \  \"x-version\" : \"1.0.2\",\r
+
+      \  \"title\" : \"TRADERS\",\r
+
+      \  \"type\" : \"object\",\r
+
+      \  \"dbObject\" : \"DEVELOPER.TRADERS\",\r
+
+      \  \"dbObjectType\" : \"table\",\r
+
+      \  \"properties\" :\r
+
+      \  {\r
+
+      \    \"NAME\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"string\",\r
+
+      \          \"extendedType\" : \"string\",\r
+
+      \          \"maxLength\" : 100\r
+
+      \        }\r
+
+      \      ]\r
+
+      \    },\r
+
+      \    \"SALARY\" :\r
+
+      \    {\r
+
+      \      \"oneOf\" :\r
+
+      \      [\r
+
+      \        {\r
+
+      \          \"type\" : \"null\",\r
+
+      \          \"extendedType\" : \"null\"\r
+
+      \        },\r
+
+      \        {\r
+
+      \          \"type\" : \"number\",\r
+
+      \          \"extendedType\" : \"number\"\r
+
+      \        }\r
+
+      \      ],\r
+
+      \      \"x-sensitive\" : true\r
+
+      \    }\r
+
+      \  }\r
+
+      }\r
+
+      ```"
+    languageId: markdown
