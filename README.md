@@ -205,3 +205,7 @@ This [demo](./08-demo_json_schema_transformation.sqlnb) shows which SQL function
 ### Demo #09 - JSON Schema generation with additional database metadata
 
 This [demo](./09-demo_json_generation_with_additional_database_metadata.sqlnb) shows how the database dictionary/metadata can be used to provide richer JSON Schema generated from database objects. We'll see an example where database annotations (table and columns), edition, data redaction policy, and other session related context can be used to modify generated JSON Schemas.
+
+### Demo #10 - REST API for JSON Schema catalog
+
+This [demo](./10-demo_REST_API_JSON_Schema_catalog.sqlnb) shows how to leverage Oracle REST Data Services (ORDS) to build a JSON Schema catalog accessible via a REST API.

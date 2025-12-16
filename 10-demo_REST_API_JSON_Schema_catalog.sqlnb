@@ -1,0 +1,370 @@
+cells:
+  - kind: 1
+    value: "### Let's create a fully functional REST API JSON Schema catalog\r
+
+      \r
+
+      We'll use Oracle REST Data Services (ORDS). The `Setup` section of the
+      [README.md](./README.md) file provides all the installation steps.\r
+
+      \r
+
+      Once installed, you can run ORDS using `run_ords.cmd` command file
+      (Windows)."
+    languageId: markdown
+  - kind: 1
+    value: "ℹ️ Ensure, the `developer` user has run the command: \r
+
+      ```sql\r
+
+      exec ORDS.enable_schema;\r
+
+      ```\r
+
+      \r
+
+      ℹ️ Ensure to run the [demo
+      #09](./09-demo_json_generation_with_additional_database_metadata.sqlnb) to
+      install the `getAnnotatedJSONSchema()` function."
+    languageId: markdown
+  - kind: 1
+    value: "This demo also requires the creation of the following `semver` data use
+      case domain:"
+    languageId: markdown
+  - kind: 2
+    value: "-- Semantic versioning data use case domain\r
+
+      drop domain if exists semver;\r
+
+      \r
+
+      create domain semver as VARCHAR2(100)\r
+
+      \  constraint format_semver check (\r
+
+      \    REGEXP_LIKE(semver, '^([0-9]+).([0-9]+).([0-9]+)([-a-zA-Z0-9.+]*)$')
+      or semver = 'ORA$BASE'\r
+
+      \  )\r
+
+      \  display 'v' || semver\r
+
+      \  order case semver when 'ORA$BASE' then chr(0) else
+      lpad(regexp_substr(semver,'\\d+',1,1),10,'0') || \r
+
+      \        lpad(regexp_substr(semver,'\\d+',1,2),10,'0') || \r
+
+      \        lpad(regexp_substr(semver,'\\d+',1,3),10,'0') ||\r
+
+      \        lower(decode(REGEXP_INSTR(semver,'-([-a-zA-Z0-9.+]+)$',1,1),0,'~\
+      ',\r
+
+      \               substr(semver,
+      decode(REGEXP_INSTR(semver,'-([-a-zA-Z0-9.+]+)$',1,1),0,length(semver)+1,\
+      REGEXP_INSTR(semver,'-([-a-zA-Z0-9.+]+)$',1,1)))))\r
+
+      \        end;"
+    languageId: oracle-sql
+  - kind: 2
+    value: "-- Now create the REST API programmatically\r
+
+      DECLARE\r
+
+      \  l_roles     OWA.VC_ARR;\r
+
+      \  l_modules   OWA.VC_ARR;\r
+
+      \  l_patterns  OWA.VC_ARR;\r
+
+      \r
+
+      BEGIN\r
+
+      \  ORDS.ENABLE_SCHEMA(\r
+
+      \      p_enabled             => TRUE,\r
+
+      \      p_url_mapping_type    => 'BASE_PATH',\r
+
+      \      p_url_mapping_pattern => 'developer',\r
+
+      \      p_auto_rest_auth      => FALSE);\r
+
+      \r
+
+      \  ORDS.DEFINE_MODULE(\r
+
+      \      p_module_name    => 'org.example.jsonschema',\r
+
+      \      p_base_path      => '/jsonschema/',\r
+
+      \      p_items_per_page => 25,\r
+
+      \      p_status         => 'PUBLISHED',\r
+
+      \      p_comments       => NULL);\r
+
+      \r
+
+      \  ORDS.DEFINE_TEMPLATE(\r
+
+      \      p_module_name    => 'org.example.jsonschema',\r
+
+      \      p_pattern        => 'catalog/:version',\r
+
+      \      p_priority       => 0,\r
+
+      \      p_etag_type      => 'HASH',\r
+
+      \      p_etag_query     => NULL,\r
+
+      \      p_comments       => NULL);\r
+
+      \r
+
+      \  ORDS.DEFINE_HANDLER(\r
+
+      \      p_module_name    => 'org.example.jsonschema',\r
+
+      \      p_pattern        => 'catalog/:version',\r
+
+      \      p_method         => 'GET',\r
+
+      \      p_source_type    => 'plsql/block',\r
+
+      \      p_mimes_allowed  => NULL,\r
+
+      \      p_comments       => NULL,\r
+
+      \      p_source         => \r
+
+      'declare\r
+
+      \  res clob;\r
+
+      \  l_version varchar2(128);\r
+
+      begin\r
+
+      \  if :version = ''latest'' then\r
+
+      \  execute immediate q''!\r
+
+      \    select edition_name \r
+
+      \    from all_editions \r
+
+      \    order by domain_order( cast( edition_name as semver ) ) desc \r
+
+      \    fetch first 1 row only!'' into l_version;\r
+
+      \  elsif :version = ''first'' then\r
+
+      \    l_version := ''ORA$BASE'';\r
+
+      \  elsif :version = ''all'' then\r
+
+      \    l_version := null;\r
+
+      \  else\r
+
+      \    select edition_name \r
+
+      \    into l_version\r
+
+      \    from all_editions\r
+
+      \    where edition_name = :version;\r
+
+      \  end if;\r
+
+      \r
+
+      \  select json_serialize(\r
+
+      \             json_object( ''version'' value nvl(case l_version when
+      ''ORA$BASE'' then ''first'' else l_version end,''all''), \r
+
+      \                          ''schemas'' value (select json_arrayagg( \r
+
+      \                  json_object( ''name'' value object_name, ''type'' value
+      object_type, ''version'' value nvl(case edition_name when ''ORA$BASE''
+      then ''first'' else edition_name end,''latest''), ''schema'' value treat(
+      GETANNOTATEDJSONSCHEMA(object_name, decode(edition_name,''ORA$BA' ||
+      'SE'',null,edition_name)) as json)\r
+
+      \                  returning json) ORDER BY object_name returning json\r
+
+      \              )\r
+
+      \  from user_objects_ae where object_type in (''VIEW'',''DOMAIN'') and
+      (edition_name = l_version or l_version is null))\r
+
+      \            returning json ) returning clob value pretty \r
+
+      \         ) into res;\r
+
+      \ \r
+
+      \  :status_code := 200;\r
+
+      \  htp.p( res );\r
+
+      exception when no_data_found then\r
+
+      \  :status_code := 404;\r
+
+      \  htp.p( ''{\"error\": \"version not found\"}'' );\r
+
+      end;');\r
+
+      \r
+
+      \  ORDS.DEFINE_PARAMETER(\r
+
+      \      p_module_name        => 'org.example.jsonschema',\r
+
+      \      p_pattern            => 'catalog/:version',\r
+
+      \      p_method             => 'GET',\r
+
+      \      p_name               => 'version',\r
+
+      \      p_bind_variable_name => 'version',\r
+
+      \      p_source_type        => 'URI',\r
+
+      \      p_param_type         => 'STRING',\r
+
+      \      p_access_method      => 'IN',\r
+
+      \      p_comments           => NULL);\r
+
+      \r
+
+      \  ORDS.CREATE_ROLE(\r
+
+      \      p_role_name=> 'oracle.dbtools.role.autorest.DEVELOPER');\r
+
+      \  ORDS.CREATE_ROLE(\r
+
+      \      p_role_name=> 'oracle.dbtools.role.autorest.any.DEVELOPER');\r
+
+      \  l_roles(1) := 'oracle.dbtools.autorest.any.schema';\r
+
+      \  l_roles(2) := 'oracle.dbtools.role.autorest.DEVELOPER';\r
+
+      \r
+
+      \  ORDS.DEFINE_PRIVILEGE(\r
+
+      \      p_privilege_name =>
+      'oracle.dbtools.autorest.privilege.DEVELOPER',\r
+
+      \      p_roles          => l_roles,\r
+
+      \      p_patterns       => l_patterns,\r
+
+      \      p_modules        => l_modules,\r
+
+      \      p_label          => 'DEVELOPER metadata-catalog access',\r
+
+      \      p_description    => 'Provides access to the metadata catalog of the
+      objects in the DEVELOPER schema.',\r
+
+      \      p_comments       => NULL); \r
+
+      \r
+
+      \  l_roles.DELETE;\r
+
+      \  l_modules.DELETE;\r
+
+      \  l_patterns.DELETE;\r
+
+      \r
+
+      \  l_roles(1) := 'SODA Developer';\r
+
+      \  l_patterns(1) := '/soda/*';\r
+
+      \r
+
+      \  ORDS.DEFINE_PRIVILEGE(\r
+
+      \      p_privilege_name => 'oracle.soda.privilege.developer',\r
+
+      \      p_roles          => l_roles,\r
+
+      \      p_patterns       => l_patterns,\r
+
+      \      p_modules        => l_modules,\r
+
+      \      p_label          => NULL,\r
+
+      \      p_description    => NULL,\r
+
+      \      p_comments       => NULL); \r
+
+      \r
+
+      \  l_roles.DELETE;\r
+
+      \  l_modules.DELETE;\r
+
+      \  l_patterns.DELETE;\r
+
+      \r
+
+      \r
+
+      COMMIT;\r
+
+      \r
+
+      END;\r
+
+      /"
+    languageId: oracle-sql
+  - kind: 1
+    value: "This creates one REST endpoint:
+      http://localhost/ords/developer/jsonschema/catalog/:version\r
+
+      \r
+
+      Where :version can be:\r
+
+      - `latest`: retrieves the latest existing version based on existing
+      editions\r
+
+      - a given Oracle database edition such as `1.0.2`\r
+
+      - `first`: a synonym of the ora$base default edition\r
+
+      - `all`: any edition"
+    languageId: markdown
+  - kind: 1
+    value: "You may request (curl) the current ORDS OpenAPI catalog:\r
+
+      \r
+
+      ```bash\r
+
+      curl http://localhost/ords/developer/open-api-catalog/\r
+
+      ```\r
+
+      \r
+
+      Or the REST API we've just created:\r
+
+      ```bash\r
+
+      curl http://localhost/ords/developer/jsonschema/catalog/all\r
+
+      ```\r
+
+      \r
+
+      ![](./img/ords-json-schema-catalog.png)\r\n"
+    languageId: markdown
