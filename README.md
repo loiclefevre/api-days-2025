@@ -213,3 +213,7 @@ This [demo](./10-demo_REST_API_JSON_Schema_catalog.sqlnb) shows how to leverage 
 ### Demo #11 - Kafka-compatible Transactional Event Queue (TEQ) protected with JSON Schema validation
 
 This [demo](./11-demo_transactional_event_queue.sqlnb) shows how to create a Transactional Event Queue that has its JSON payload column protected by a JSON Schema thanks (again) to a Data Use Case Domain.
+
+### Demo #12 - Query JSON Schemas Using Natural Language
+
+This [demo](./12-demo_JSON_Schema_similarity_search.sqlnb) shows how to use AI capabilities of the database (loading an ONNX model, computing vector embeddings, creating a vector index, computing vector distances in SQL, and retrieve Top-N JSON Schema) to query JSON Schemas using natural language.
