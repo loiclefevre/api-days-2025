@@ -1,21 +1,21 @@
 # API Days 2025 - JSON Schema conference - Demos
 
-This GitHub repository comes with numerous demos related to the support of JSON Schemas within the Oracle AI Database 26ai. You can access the demos from APIDays Paris 2024 [here](https://github.com/loiclefevre/apidays-paris-2024).
+This GitHub repository comes with numerous demos related to the support of [JSON Schemas](https://json-schema.org/) within the [Oracle AI Database 26ai](https://www.oracle.com/database/). You can access the demos from APIDays Paris 2024 [here](https://github.com/loiclefevre/apidays-paris-2024).
 
-## Follow-up event: 
+## Follow-up event:
 
 [JSON Schema support in Autonomous AI Database](https://asktom.oracle.com/ords/r/tech/catalog/session-landing-page?p2_event_id=90355527572382336109225349848037482576&p2_source_log=QR) will take place online the 10th of February 2026.
 ![](./img/event.png)
 
 ## Setup
 
-Examples for Windows, running WSL2 for podman...
+Examples for Windows, running WSL2 for [podman](https://podman.io/)...
 
 ### Oracle SQL Developer Extension for VSCode
 Install the [VSCode extension from the market place](https://marketplace.visualstudio.com/items?itemName=Oracle.sql-developer).
 
 ### Database Installation
-To install an Oracle AI database 26ai, install podman and then run (after replacing <path> with your own path to a shared folder named libs, shared between your OS and the container):
+To install an Oracle AI database 26ai, install [podman](https://podman.io/) and then run (after replacing <path> with your own path to a shared folder named `libs`, shared between your operating system and the container):
 
 ```bash
 podman run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD=free -e APP_USER=developer -e APP_USER_PASSWORD=free --volume C:\<path>\api-days-2025\libs:/opt/oracle/oradata/libs gvenzl/oracle-free:23.26.0
@@ -140,7 +140,7 @@ In order for the demos to work properly, additional privileges are required for 
 ```sql
 -- connected as sys/free@localhost/freepdb1 as sysdba using SQL Developer Extension for VSCode or using sqlplus / as sysdba
 
--- switch to freepdb1 database container if needed
+-- switch to the freepdb1 database container if needed
 alter session set container=freepdb1;
 
 -- manage editions
